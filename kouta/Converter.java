@@ -7,30 +7,36 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Converter {
-	public static String inputFile;
-	public static String dictFile;
+	public String inputFile;
+	public String dictFile;
 	
 	public static void main(String[] args) {
-		Converter.inputFile = "./txt/input.txt";
-		Converter.dictFile = "./txt/dict.txt";
+		Converter converter = new Converter();
 		
 		if (args.length > 0 && args[0] != "") {
-			Converter.inputFile = args[0];
+			converter.inputFile = args[0];
 		}
 		
 		if (args.length > 1 && args[1] != "") {
-			Converter.dictFile = args[1];
+			converter.dictFile = args[1];
 		}
 		
-		Converter.convert();
+		String result = converter.convert();
+		System.out.println(result);
 	}
 
-	public static void convert() {
+	public Converter() {
+		super();
+		this.inputFile = "./txt/input.txt";
+		this.dictFile = "./txt/dict.txt";
+	}
+
+	public String convert() {
+		String result = "";
 		
-		
-		try (BufferedReader br = new BufferedReader(new FileReader(Converter.inputFile)))
+		try (BufferedReader br = new BufferedReader(new FileReader(this.inputFile)))
 		{
-			try (BufferedReader dr = new BufferedReader(new FileReader(Converter.dictFile))) {
+			try (BufferedReader dr = new BufferedReader(new FileReader(this.dictFile))) {
  
 				String sCurrentLine;
 				String resultLine;
@@ -45,10 +51,11 @@ public class Converter {
 						
 				while ((sCurrentLine = br.readLine()) != null) {
 					
-					resultLine += Converter.convertToCursiveBold(sCurrentLine, dict);
+					resultLine += this.convertToCursiveBold(sCurrentLine, dict);
 				}
-				System.out.println(Converter.generateHtmlFile(resultLine));
-			
+				
+				result = this.generateHtmlFile(resultLine);
+				
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -56,22 +63,24 @@ public class Converter {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		return result;
  
 	}
 	
-	public static String generateHtmlFile(String text) {
+	public String generateHtmlFile(String text) {
 		String header = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\" />\n<title>Test task</title>\n</head>\n<body><p>";
 		String footer = "</p></body>";
 		return header + text + footer;
 	}
 	
-	public static String convertToCursiveBold(String line, Set<String> dict) {
+	public String convertToCursiveBold(String line, Set<String> dict) {
 		String tempResult = line;
 		for (String word : dict) {
 			tempResult = tempResult.replaceAll("\\b" + word + "\\b", "<b><i>" + word + "</i></b>");
 		}
 		
-		return tempResult + "\n";
+		return tempResult + "<br />";
 	}
 	
 }
