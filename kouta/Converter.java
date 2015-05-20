@@ -19,9 +19,11 @@ public class Converter {
 	public String inputFile;
 	public String dictFile;
 	public String resultFile;
+	public String header = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\" />\n<title>Test task</title>\n</head>\n<body><p>";
+	public String footer = "</p></body>";
 	public int lineCount;
 
-	private int LINE_COUNT = 5;
+	private int LINE_COUNT = 11;
 	
 	public static void main(String[] args) {
 		Converter converter = new Converter();
@@ -43,21 +45,10 @@ public class Converter {
 				converter.lineCount = Integer.parseInt(args[3]);
 		    } catch (NumberFormatException e) {
 		        System.err.println("Argument" + args[3] + " must be an integer.");
-		        System.exit(1);
 		    }
 		}
 		
-		ArrayList<String> result = converter.convert();
-		int i = 1;
-		for (String block : result) {
-			if (converter.writeHtml(block)) {
-				System.out.println("Done " + converter.resultFile);
-				converter.resultFile = FilenameUtils.removeExtension(converter.resultFile) + i + "." + FilenameUtils.getExtension(converter.resultFile);
-				i++;
-			} else {
-				System.out.println("Fail");
-			}
-		}
+		converter.convert();
 	}
 
 	public Converter() {
@@ -68,15 +59,14 @@ public class Converter {
 		this.lineCount = this.LINE_COUNT;
 	}
 
-	public ArrayList<String> convert() {
-		ArrayList<String> result = new ArrayList<String>();
+	public void convert() {
+		String sCurrentLine;
 		
 		try (BufferedReader br = new BufferedReader(new FileReader(this.inputFile)))
 		{
 			try (BufferedReader dr = new BufferedReader(new FileReader(this.dictFile))) {
  
-				String sCurrentLine;
-				String resultLine;
+				String resultLines;
 				Set<String> dict = new HashSet<String>();
 				
 				
@@ -85,30 +75,56 @@ public class Converter {
 				}
 				
 				sCurrentLine = "";
-				resultLine = "";
-						
+				resultLines = "";
+				int counter = 1;
+				int i = 0;
+				int headersLineCount = this.header.split("\r\n|\r|\n").length + this.footer.split("\r\n|\r|\n").length;
+				List<String> sentence;
+
 				while ((sCurrentLine = br.readLine()) != null) {
 					
-					resultLine += this.convertToCursiveBold(sCurrentLine, dict);
+					if (headersLineCount + counter >= this.lineCount && sCurrentLine.contains(".")) {
+						sentence = Arrays.asList(sCurrentLine.split("\\.[\r\n|\r|\n|\\s|<br />]"));
+						
+						if (sentence.size() > 1) {
+							resultLines += this.convertToCursiveBold(sentence.get(0) + ".", dict);
+						} else {
+							resultLines += this.convertToCursiveBold(sentence.get(0), dict);
+						}
+						
+						sCurrentLine = StringUtils.join(sentence.subList(1, sentence.size()),".");
+						if (this.writeHtml(resultLines, i++)) {
+							System.out.println("Done file " + i);
+							counter = 1;
+							resultLines = "";
+						} else {
+							System.out.println("Fail");
+						}
+							
+					}
+					
+					resultLines += this.convertToCursiveBold(sCurrentLine, dict);
+					counter++;
+				}
+
+				if (this.writeHtml(resultLines, i)) {
+					System.out.println("Done file " + (i+1));
+				} else {
+					System.out.println("Fail");
 				}
 				
-				result = this.generateHtmlFiles(resultLine);
 				
 			} catch (IOException e) {
 				e.printStackTrace();
-				System.exit(1);
 			}
  
 		} catch (IOException e) {
 			e.printStackTrace();
-			System.exit(1);
 		}
 		
-		return result;
- 
 	}
 	
-	public ArrayList<String> generateHtmlFiles(String text) {
+	public String generateHtmlFiles(String text) {
 		String header = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\" />\n<title>Test task</title>\n</head>\n<body><p>";
 		String footer = "</p></body>";
 		
@@ -138,6 +154,7 @@ public class Converter {
 				if (sentence.size() > 1) {
 					textLines.set(end, StringUtils.join(sentence.subList(1, sentence.size()),"."));
 				}
+				
 				if (end > 0) {
 					i += end;
 				} else {
@@ -148,7 +165,7 @@ public class Converter {
 		} else {
 			result.add(header + text + footer);
 		}
-		return result;
+		return "";
 	}
 	
 	public String convertToCursiveBold(String line, Set<String> dict) {
@@ -160,11 +177,15 @@ public class Converter {
 		return tempResult + "<br />\n";
 	}
 	
-	public boolean writeHtml(String text) {
+	public boolean writeHtml(String text, int counter) {
 		boolean result = false;
+		String filename = this.resultFile;
+		if (counter > 0) {
+			filename = FilenameUtils.removeExtension(this.resultFile) + counter + "." + FilenameUtils.getExtension(this.resultFile);
+		}
 		try {
 			 
-			File file = new File(this.resultFile);
+			File file = new File(filename);
  
 			if (!file.exists()) {
 				file.createNewFile();
@@ -172,7 +193,7 @@ public class Converter {
  
 			FileWriter fw = new FileWriter(file.getAbsoluteFile());
 			BufferedWriter bw = new BufferedWriter(fw);
-			bw.write(text);
+			bw.write(this.header + text + this.footer);
 			bw.close();
  
 			result = true;
