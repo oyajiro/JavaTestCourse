@@ -3,7 +3,7 @@
  */
 package kouta;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -17,7 +17,7 @@ import org.junit.Test;
 public class ConverterTest {
 	
 	/**
-	 * Test method for {@link kouta.Converter#convertToCursiveBold(java.lang.String)}.
+	 * Test method for {@link kouta.Converter#convertToCursiveBold(java.lang.String line, java.util.Set<java.lang.String> dict)}.
 	 */
 	@Test
 	public void testConvertToCursiveBold() {

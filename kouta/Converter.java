@@ -6,14 +6,14 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Converter is a public final class for convert from text to html.
@@ -53,13 +53,13 @@ public final class Converter {
 	 */
 	static final int LINE_COUNT = 100;
 	/**
-	 * Hard limit for html file.
+	 * Hard limit added to soft limit for html file.
 	 */
-	static final int HARD_LIMIT = 105;
+	static final int HARD_LIMIT = 10;
 
 	/**
 	 * Take args as input, invoke constructor and convert method.
-	 * @param args InputFile name, dictFile name, resultFile name and lineCount value
+	 * @param args InputFile name, dictFile name, lineCount value and resultFile name
 	 */
 	public static void main(final String[] args) {
 		Converter converter = new Converter();
@@ -72,17 +72,16 @@ public final class Converter {
 			converter.dictFile = args[1];
 		}
 
-		if (args.length > 2 && args[2] != "") {
-			converter.resultFile = args[2];
-		}
-
-		if (args.length > 3) {
+		if (args.length > 2) {
 			try {
-				converter.lineCount = Integer.parseInt(args[3]);
+				converter.lineCount = Integer.parseInt(args[2]);
 			} catch (NumberFormatException e) {
-				System.err.println("Argument" + args[3]
-						+ " must be an integer.");
+				System.err.println("Argument" + args[2]	+ " must be an integer.");
 			}
+		}
+		
+		if (args.length > 3 && args[3] != "") {
+			converter.resultFile = args[3];
 		}
 
 		converter.convert();
@@ -101,8 +100,10 @@ public final class Converter {
 		super();
 		this.inputFile = "./txt/input.txt";
 		this.dictFile = "./txt/dict.txt";
-		this.resultFile = "./html/index.html";
+		this.resultFile = "./index.html";
 		this.lineCount = Converter.LINE_COUNT;
+		this.recursiveDelete(new File("html"));
+		new File("html").mkdir();
 	}
 
 	/**
@@ -135,9 +136,8 @@ public final class Converter {
 				List<String> sentence;
 
 				while ((sCurrentLine = br.readLine()) != null) {
-
-					if ((headersLineCount + counter >= this.lineCount && sCurrentLine.matches("\\.[\r\n|\r|\n|\\s]"))
-							|| headersLineCount + counter > Converter.HARD_LIMIT) {
+					if ((headersLineCount + counter >= this.lineCount && sCurrentLine.matches(".*\\.[\r\n|\r|\n|\\s].*"))
+							|| headersLineCount + counter > this.lineCount + Converter.HARD_LIMIT) {
 						sentence = Arrays.asList(sCurrentLine.split("\\.[\r\n|\r|\n|\\s|<br />]"));
 
 						if (sentence.size() > 1) {
@@ -189,7 +189,7 @@ public final class Converter {
 	public String convertToCursiveBold(final String line, final Set<String> dict) {
 		String tempResult = line;
 		for (String word : dict) {
-			tempResult = tempResult.replaceAll("\\b" + word + "\\b", "<b><i>"
+			tempResult = tempResult.replaceAll("\\b" + Pattern.quote(word) + "\\b", "<b><i>"
 					+ word + "</i></b>");
 		}
 
@@ -209,6 +209,9 @@ public final class Converter {
 			filename = FilenameUtils.removeExtension(this.resultFile) + counter
 					+ "." + FilenameUtils.getExtension(this.resultFile);
 		}
+		
+		filename = "html/" + filename;
+		
 		try {
 
 			File file = new File(filename);
@@ -230,5 +233,28 @@ public final class Converter {
 
 		return result;
 	}
+	
+	/**
+	 * Delete file or directory with files.
+	 * @param file file or directory needed to delete
+	 */
+	public void recursiveDelete(final File file) {
+        if (!file.exists()) {
+            return;
+        }
+        
+        try {
+        	if (file.isDirectory()) {
+        		for (File f : file.listFiles()) {
+        			recursiveDelete(f);
+        		}
+        	}
+			
+		} catch (NullPointerException e) {
+			System.out.println(e.getMessage());
+		}
+ 
+        file.delete();
+    }
 
 }
